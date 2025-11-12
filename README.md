@@ -181,9 +181,9 @@ docker run --rm -it \
 
 | Component | URL | Notes |
 |------------|-----|-------|
-| **Frontend (Website)** | `http://<frontend-public-ip>` | React/Nginx-based UI |
-| **Backend (API)** | `http://<backend-public-ip>` | Node.js/Express server |
-| **Monitoring Dashboard** | `http://<nagios-public-ip>/nagios4` | Username: `nagiosadmin` <br> Password: *(set in playbook)* |
+| **Frontend (Website)** | `http://<aws-frontend-public-ip>` | React/Nginx-based UI |
+| **Backend (API)** | `http://<aws-backend-public-ip>` | Node.js/Express server |
+| **Monitoring Dashboard** | `http://<aws-nagios-public-ip>/nagios4` | Username: `nagiosadmin` <br> Password: *(set in playbook)* |
 
 ---
 
