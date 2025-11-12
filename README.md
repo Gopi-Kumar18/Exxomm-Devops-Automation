@@ -1,32 +1,201 @@
-Exxomm: MERN E-commerce DevOps ProjectThis repository documents the complete, automated deployment of the "Exxomm" MERN-stack e-commerce application to a production environment on AWS. The entire workflow, from cloud infrastructure creation to application deployment and monitoring, is managed using a modern DevOps toolchain.Technology StackThis project integrates several key technologies to achieve full automation and observability.Application: MERN Stack (React.js, Node.js, Express.js)Database: MongoDB Atlas (Managed Cloud Database)Containerization: Docker & Docker ComposeCloud Provider: Amazon Web Services (AWS)Infrastructure as Code (IaC): TerraformConfiguration Management: AnsibleMonitoring: Nagios CoreProject ArchitectureThe infrastructure is designed to be scalable, secure, and fully automated.Terraform (Phase 1): Provisions the foundational infrastructure on AWS, including:A custom VPC, public subnet, internet gateway, and route tables.An EC2 instance for the Frontend (React/Nginx).An EC2 instance for the Backend (Node.js/Express).An EC2 instance for the Monitoring Server (Nagios).Three distinct Security Groups (firewalls) to control traffic for the web, Nagios, and database access.An AWS Key Pair (and saves the .pem file locally) for SSH access.MongoDB Atlas (Database): A managed, cloud-native MongoDB database is used for data persistence. Its firewall is configured to only allow connections from the IP addresses of our AWS servers.Ansible (Phase 2): Takes over after the infrastructure is built. It's responsible for:Configuration: Logging into the blank Ubuntu servers and installing all necessary software (Docker, Nginx, Nagios Agents, etc.).Deployment: Pulling the production-ready exxomm-fe and exxomm-be Docker images from Docker Hub.Execution: Running the containers with the correct environment variables (like the MONGO_URI) injected from a secure Ansible Vault.Nagios (Phase 3):A central Nagios server is installed and configured by Ansible.Agents (NRPE) are installed on the frontend and backend servers.The Nagios dashboard provides a live, centralized view of the health of all deployed services (e.g., "Is HTTP on the frontend server responding?").PrerequisitesBefore running this deployment, you will need:An AWS Account with an IAM user and configured CLI credentials.A MongoDB Atlas account with a cluster created.A Docker Hub account to host your images.Terraform installed locally.Docker Desktop installed locally (we will use this to run the Ansible controller).Deployment WorkflowThis project is deployed in three phases.Phase 0: Containerize the ApplicationBefore deploying, the frontend and backend must be correctly containerized for a production environment.Backend (exxomm-be):The Dockerfile creates a Node.js environment.The db.js file is updated to use the process.env.MONGO_URI variable (which Ansible will provide).Frontend (exxomm-fe):The config.js file is updated to use relative paths (baseURL: "") in production, which will be handled by our Nginx proxy.A custom nginx.conf file is created to serve the static React files and act as a reverse proxy. Any request to /api is proxied to the backend's private IP (e.g., proxy_pass http://<backend-private-ip>:3000;).The Dockerfile is a multi-stage build that builds the React app and copies both the static files and nginx.conf into a final Nginx image.Build and Push:Build and push both images to Docker Hub:# 1. Build
+# Exxomm: MERN E-commerce DevOps Project
+
+This repository documents the complete, automated deployment of the **Exxomm** MERN-stack e-commerce application to a production environment on **AWS**. The entire workflow—from cloud infrastructure creation to application deployment and monitoring—is managed using a modern **DevOps toolchain**.
+
+---
+
+## 🚀 Technology Stack
+
+This project integrates several key technologies to achieve full automation and observability.
+
+| Layer | Technology |
+|--------|-------------|
+| **Application** | MERN Stack (React.js, Node.js, Express.js) |
+| **Database** | MongoDB Atlas (Managed Cloud Database) |
+| **Containerization** | Docker & Docker Compose |
+| **Cloud Provider** | Amazon Web Services (AWS) |
+| **Infrastructure as Code (IaC)** | Terraform |
+| **Configuration Management** | Ansible |
+| **Monitoring** | Nagios Core |
+
+---
+
+## 🏗️ Project Architecture
+
+The infrastructure is designed to be **scalable**, **secure**, and **fully automated**.
+
+### Phase 1: Terraform (Infrastructure Provisioning)
+Terraform provisions all foundational infrastructure on AWS, including:
+
+- A **custom VPC**, public subnet, internet gateway, and route tables.
+- An **EC2 instance** for the Frontend (React/Nginx).
+- An **EC2 instance** for the Backend (Node.js/Express).
+- An **EC2 instance** for the Monitoring Server (Nagios).
+- Three distinct **Security Groups** (firewalls) to control web, Nagios, and database access.
+- An **AWS Key Pair** (saved locally as `.pem`) for SSH access.
+
+### MongoDB Atlas (Database)
+- A managed, cloud-native MongoDB service for persistent storage.
+- Firewall configured to only allow traffic from AWS EC2 public IPs.
+
+### Phase 2: Ansible (Configuration & Deployment)
+After Terraform completes, Ansible:
+
+- **Configures servers:** Installs Docker, Nginx, and Nagios agents.
+- **Deploys containers:** Pulls `exxomm-fe` and `exxomm-be` Docker images from Docker Hub.
+- **Injects environment variables** securely using an **Ansible Vault** (`secrets.yml`).
+
+### Phase 3: Nagios (Monitoring Setup)
+- Installs and configures **Nagios Core** on the monitoring server.
+- Deploys **NRPE agents** on the backend and frontend servers.
+- The **Nagios dashboard** continuously monitors service uptime, performance, and connectivity.
+
+---
+
+## ⚙️ Prerequisites
+
+Before running this deployment, ensure you have:
+
+- An **AWS Account** with IAM user credentials configured.
+- A **MongoDB Atlas** cluster.
+- A **Docker Hub** account for hosting container images.
+- **Terraform** and **Docker Desktop** installed locally.
+
+---
+
+## 🚀 Deployment Workflow
+
+### Phase 0: Containerize the Application
+Before deployment, the backend and frontend applications must be containerized.
+
+#### Backend (`exxomm-be`)
+- The Dockerfile sets up the Node.js environment.
+- The `db.js` file references `process.env.MONGO_URI` for the database connection.
+
+#### Frontend (`exxomm-fe`)
+- The config file uses relative paths (`baseURL: ""`) in production.
+- `nginx.conf` serves static files and reverse proxies API calls to the backend.
+
+#### Build and Push Docker Images
+```bash
 docker build -t your-username/exxomm-be-image:latest ./exxomm-be
 docker build -t your-username/exxomm-fe-image:latest ./exxomm-fe
 
-# 2. Push
 docker push your-username/exxomm-be-image:latest
 docker push your-username/exxomm-fe-image:latest
-Phase 1: Provision Infrastructure (Terraform)Navigate to the infra/ directory.Run terraform init to initialize the project and download providers.Run terraform apply. This will:Ask for confirmation.Build all the AWS resources (VPC, instances, security groups).Create and save a new SSH key named exxomm-key.pem in the infra folder.Phase 2: Deploy Application (Ansible)Update Inventory:Go to your AWS EC2 Console and get the Public IP addresses for your Exxomm-Frontend, Exxomm-Backend, and Exxomm-Nagios-Server instances.Open ansible/inventory and update the ansible_host for each server.Create Secrets:Use the Ansible Vault command to create an encrypted secrets.yml file. This command runs Ansible inside a Docker container.docker run --rm -it -v "${pwd}:/ansible" cytopia/ansible:latest ansible-vault create /ansible/secrets.yml
-When the vi editor opens, press i, paste the following (using your own credentials), then press Esc and type :wq to save and quit.MONGO_URI: "mongodb+srv://<your-atlas-user>:<your-atlas-pass>@cluster..."
+```
+
+---
+
+### Phase 1: Provision Infrastructure (Terraform)
+
+```bash
+cd infra/
+terraform init
+terraform apply
+```
+
+This will:
+- Create all AWS resources.
+- Generate an SSH key named `exxomm-key.pem`.
+
+---
+
+### Phase 2: Deploy Application (Ansible)
+
+#### Update Inventory
+Add your EC2 public IPs to `ansible/inventory`:
+```ini
+[frontend]
+frontend_server ansible_host=<frontend_public_ip>
+
+[backend]
+backend_server ansible_host=<backend_public_ip>
+
+[monitor]
+nagios_server ansible_host=<nagios_public_ip>
+
+[all:vars]
+ansible_user=ubuntu
+ansible_python_interpreter=/usr/bin/python3
+```
+
+#### Create Ansible Vault
+```bash
+docker run --rm -it -v "${pwd}:/ansible" cytopia/ansible:latest ansible-vault create /ansible/secrets.yml
+```
+Add:
+```yaml
+MONGO_URI: "mongodb+srv://<atlas-user>:<atlas-pass>@cluster..."
 JWT_SECRET: "your-jwt-secret"
 DOCKER_HUB_PASS: "your-docker-hub-password"
-Run the Main Playbook:This command mounts your ansible folder and your .pem key into the Ansible container, fixes the key's permissions, and runs the playbook.Note: Update the path to your .pem file to match where Terraform saved it.docker run --rm -it `
-  -v "${pwd}:/ansible" `
-  -v "G:\Projects\devops_project\exxomm\infra\exxomm-key.pem:/root/.ssh/id_rsa:ro" `
-  -e ANSIBLE_HOST_KEY_CHECKING=False `
-  willhallonline/ansible:latest `
+```
+
+#### Run the Playbook
+```bash
+docker run --rm -it \
+  -v "${pwd}:/ansible" \
+  -v "G:\Projects\devops_project\exxomm\infra\exxomm-key.pem:/root/.ssh/id_rsa:ro" \
+  -e ANSIBLE_HOST_KEY_CHECKING=False \
+  willhallonline/ansible:latest \
   sh -c "chmod 600 /root/.ssh/id_rsa && ansible-playbook -i /ansible/inventory /ansible/deploy.yml --ask-vault-pass"
-Seed the Database (Optional):To populate your production database, run the seeder script using Ansible's ad-hoc docker exec command.docker run --rm -it `
-  -v "${pwd}:/ansible" `
-  -v "G:\Projects\devops_project\exxomm\infra\exxomm-key.pem:/root/.ssh/id_rsa:ro" `
-  -e ANSIBLE_HOST_KEY_CHECKING=False `
-  willhallonline/ansible:latest `
+```
+
+#### (Optional) Seed Database
+```bash
+docker run --rm -it \
+  -v "${pwd}:/ansible" \
+  -v "G:\Projects\devops_project\exxomm\infra\exxomm-key.pem:/root/.ssh/id_rsa:ro" \
+  -e ANSIBLE_HOST_KEY_CHECKING=False \
+  willhallonline/ansible:latest \
   sh -c "chmod 600 /root/.ssh/id_rsa && ansible backend -i /ansible/inventory -m shell -a 'docker exec exxomm-backend node backend/seederScript.js'"
-Phase 3: Configure Monitoring (Nagios)Install Nagios Server:Run the nagios_install.yml playbook. This installs Nagios, Apache, and sets the dashboard password.docker run --rm -it `
-  # ... (same volumes as above) ...
-  willhallonline/ansible:latest `
+```
+
+---
+
+### Phase 3: Configure Monitoring (Nagios)
+
+#### Install Nagios Core Server
+```bash
+docker run --rm -it \
+  -v "${pwd}:/ansible" \
+  -v "G:\Projects\devops_project\exxomm\infra\exxomm-key.pem:/root/.ssh/id_rsa:ro" \
+  -e ANSIBLE_HOST_KEY_CHECKING=False \
+  willhallonline/ansible:latest \
   sh -c "chmod 600 /root/.ssh/id_rsa && ansible-playbook -i /ansible/inventory /ansible/nagios_install.yml"
-Configure Nagios:Go to your AWS EC2 Console and get the Private IP addresses for your frontend and backend servers.Update ansible/exomm.cfg with these private IPs.Run the nagios_configure.yml playbook to upload the config file and restart Nagios.docker run --rm -it `
-  # ... (same volumes as above) ...
-  willhallonline/ansible:latest `
+```
+
+#### Configure Nagios
+```bash
+docker run --rm -it \
+  -v "${pwd}:/ansible" \
+  -v "G:\Projects\devops_project\exxomm\infra\exxomm-key.pem:/root/.ssh/id_rsa:ro" \
+  -e ANSIBLE_HOST_KEY_CHECKING=False \
+  willhallonline/ansible:latest \
   sh -c "chmod 600 /root/.ssh/id_rsa && ansible-playbook -i /ansible/inventory /ansible/nagios_configure.yml"
-Accessing the Deployed ApplicationFrontend (Website): http://<your-frontend-public-ip>Backend (API): http://<your-backend-public-ip>Monitoring Dashboard: http://<your-nagios-public-ip>/nagios4Username: nagiosadminPassword: (The password you set in nagios_install.yml)
+```
+
+---
+
+## 🌐 Accessing the Application
+
+| Component | URL | Notes |
+|------------|-----|-------|
+| **Frontend (Website)** | `http://<frontend-public-ip>` | React/Nginx-based UI |
+| **Backend (API)** | `http://<backend-public-ip>` | Node.js/Express server |
+| **Monitoring Dashboard** | `http://<nagios-public-ip>/nagios4` | Username: `nagiosadmin` <br> Password: *(set in playbook)* |
+
+---
+
+## ✅ Summary
+
+The **Exxomm** project demonstrates a complete CI/CD-style infrastructure setup and deployment pipeline for a MERN e-commerce application. Using **Terraform**, **Ansible**, and **Docker**, it achieves:
+
+- Fully automated provisioning and configuration.
+- Secure environment variable management via Ansible Vault.
+- Centralized monitoring through Nagios.
+- Infrastructure-as-Code reproducibility and scalability.
+
+---
+
+> 💡 *Designed and deployed as part of an end-to-end DevOps learning project integrating modern cloud automation principles.*
