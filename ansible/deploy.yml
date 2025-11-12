@@ -1,0 +1,188 @@
+# ---
+# - name: Deploy Exxomm Backend
+#   hosts: backend
+#   become: yes
+#   vars_files:
+#     - secrets.yml # Load encrypted variables
+
+#   tasks:
+#     - name: Update apt cache
+#       apt:
+#         update_cache: yes
+
+#     - name: Install Docker
+#       apt:
+#         name: docker.io
+#         state: present
+
+#     - name: Start Docker service
+#       service:
+#         name: docker
+#         state: started
+#         enabled: yes
+
+#     - name: Log in to Docker Hub
+#       community.docker.docker_login:
+#         username: gopikumar1
+#         password: "{{ DOCKER_HUB_PASS }}"
+
+#     - name: Pull the backend image
+#       community.docker.docker_image:
+#         name: gopikumar1/exxomm-be-image:latest
+#         source: pull
+
+#     - name: Run the backend container
+#       community.docker.docker_container:
+#         name: exxomm-backend
+#         image: gopikumar1/exxomm-be-image:latest
+#         state: started
+#         restart_policy: always
+#         ports:
+#           - "3000:3000"
+#         env:
+#           MONGO_URI: "{{ MONGO_URI }}"
+#           JWT_SECRET: "{{ JWT_SECRET }}"
+
+# - name: Deploy Exxomm Frontend
+#   hosts: frontend
+#   become: yes
+#   vars_files:
+#     - secrets.yml # Load encrypted variables
+
+#   tasks:
+#     - name: Update apt cache
+#       apt:
+#         update_cache: yes
+
+#     - name: Install Docker
+#       apt:
+#         name: docker.io
+#         state: present
+
+#     - name: Start Docker service
+#       service:
+#         name: docker
+#         state: started
+#         enabled: yes
+
+#     - name: Log in to Docker Hub
+#       community.docker.docker_login:
+#         username: gopikumar1
+#         password: "{{ DOCKER_HUB_PASS }}"
+
+#     - name: Pull the frontend image
+#       community.docker.docker_image:
+#         name: gopikumar1/exxomm-fe-image:latest
+#         source: pull
+
+#     - name: Run the frontend container
+#       community.docker.docker_container:
+#         name: exxomm-frontend
+#         image: gopikumar1/exxomm-fe-image:latest
+#         state: started
+#         restart_policy: always
+#         ports:
+#           - "80:80"
+
+
+---
+- name: Deploy Exxomm Backend
+  hosts: backend
+  become: yes
+  vars_files:
+    - secrets.yml # Load encrypted variables
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+        
+    - name: Add ubuntu user to the docker group
+      user:
+        name: ubuntu
+        groups: docker
+        append: yes
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: gopikumar1
+        password: "{{ DOCKER_HUB_PASS }}" # <-- Check case
+
+    - name: Pull the backend image
+      community.docker.docker_image:
+        name: gopikumar1/exxomm-be-image:latest
+        source: pull
+
+    - name: Run the backend container
+      community.docker.docker_container:
+        name: exxomm-backend
+        image: gopikumar1/exxomm-be-image:latest
+        pull: yes
+        state: started
+        restart_policy: always
+        ports:
+          - "3000:3000" # Host port:Container port
+        env:
+          MONGO_URI: "{{ MONGO_URI }}" # <-- Check case
+          JWT_SECRET: "{{ JWT_SECRET }}" # <-- Check case
+
+- name: Deploy Exxomm Frontend
+  hosts: frontend
+  become: yes
+  vars_files:
+    - secrets.yml # Load encrypted variables
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      apt:
+        name: docker.io
+        state: present
+
+    - name: Start Docker service
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    # --- THIS IS THE NEW TASK YOU NEEDED ---
+    - name: Allow HTTP traffic on ufw firewall
+      community.general.ufw:
+        rule: allow
+        port: '80'
+        proto: tcp
+    # --- END OF NEW TASK ---
+
+    - name: Log in to Docker Hub
+      community.docker.docker_login:
+        username: gopikumar1
+        password: "{{ DOCKER_HUB_PASS }}" # <-- Check case
+
+    - name: Pull the frontend image
+      community.docker.docker_image:
+        name: gopikumar1/exxomm-fe-image:latest
+        source: pull
+
+    - name: Run the frontend container
+      community.docker.docker_container:
+        name: exxomm-frontend
+        image: gopikumar1/exxomm-fe-image:latest
+        pull: yes
+        state: started
+        restart_policy: always
+        ports:
+          - "80:80" # Host port 80 (public) to Container port 80 (Nginx)

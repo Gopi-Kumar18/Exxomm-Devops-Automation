@@ -1,0 +1,54 @@
+# Node
+exxomm-be/node_modules
+exxomm-fe/node_modules
+npm-debug.log*
+yarn-error.log*
+
+# Build outputs
+dist/
+build/
+out/
+.vite/
+
+# Docker
+docker-compose.override.yml
+*.tar
+
+# Terraform
+.terraform/
+terraform.tfstate
+terraform.tfstate.backup
+
+# ansible
+secrets.yml
+
+
+# Environment & secrets
+.env
+./exomm-be/backend/.env
+./exomm-fe/.env
+*.pem
+*.key
+*.p12
+*.crt
+
+#nagios
+
+
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+
+
+# Binary / executables
+*.exe
+*.dll
+*.so
+
+
+# Misc
+/.history

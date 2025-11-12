@@ -1,0 +1,11 @@
+[frontend]
+frontend_server ansible_host=3.111.157.238
+
+[backend]
+backend_server ansible_host=15.207.107.194
+
+[all:vars]
+# This tells Ansible to use the 'ubuntu' user and find Python 3
+ansible_user=ubuntu
+ansible_python_interpreter=/usr/bin/python3
+
