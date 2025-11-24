@@ -1,8 +1,18 @@
+[proxy]
+13.204.242.139 ansible_ssh_private_key_file=exxomm-key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[proxy:vars]
+frontend_private_ip=10.0.1.107s
+backend_private_ip=10.0.1.165
+
 [frontend]
-frontend_server ansible_host=3.111.157.238
+frontend_server ansible_host=15.206.168.169 ansible_ssh_private_key_file=exxomm-key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
 [backend]
-backend_server ansible_host=15.207.107.194
+backend_server ansible_host=43.205.120.103 ansible_ssh_private_key_file=exxomm-key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'
+
+[nagios]
+nagios_server ansible_host=3.110.161.157 ansible_ssh_private_key_file=exxomm-key.pem ansible_ssh_common_args='-o StrictHostKeyChecking=no'
 
 [all:vars]
 # This tells Ansible to use the 'ubuntu' user and find Python 3

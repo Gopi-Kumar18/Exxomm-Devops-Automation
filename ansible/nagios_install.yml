@@ -1,0 +1,54 @@
+
+---
+- name: Install Nagios Core Server
+  hosts: nagios
+  become: yes
+
+  handlers:
+    - name: Restart Apache
+      service:
+        name: apache2
+        state: restarted
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Nagios, plugins, and Apache webserver
+      apt:
+        name:
+          - nagios4
+          - nagios-plugins
+          - apache2
+        state: present
+
+    - name: Create 'nagiosadmin' user for web login
+      shell: "htpasswd -b -c /etc/nagios4/htpasswd.users nagiosadmin nagios@1811"
+
+    - name: Enable Apache rewrite and cgi modules
+      shell: "a2enmod rewrite cgi"
+      notify: Restart Apache
+
+    # --- FIX: Allow external access to Nagios web interface ---
+    - name: Allow external access to Nagios web interface
+      become: yes
+      replace:
+        path: /etc/apache2/conf-enabled/nagios4-cgi.conf
+        regexp: 'Require ip\s+::1/128.*'
+        replace: 'Require all granted'
+      notify:
+        - Restart Apache
+    # --- END FIX ---
+
+    - name: Ensure Apache2 service is running
+      service:
+        name: apache2
+        state: started
+        enabled: yes
+
+    - name: Start Nagios service
+      service:
+        name: nagios4
+        state: started
+        enabled: yes

@@ -21,6 +21,7 @@ terraform.tfstate.backup
 
 # ansible
 secrets.yml
+exxomm-key.pem
 
 
 # Environment & secrets
